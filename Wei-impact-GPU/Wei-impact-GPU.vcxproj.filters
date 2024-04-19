@@ -1,0 +1,99 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{94b2e796-6225-4f7f-8549-9bc7aff66245}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{390793da-3c66-41ad-909d-d6be64e93d00}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{0265fa2a-d7d0-4104-b28e-d467acbb0a43}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="main.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="pressureandsound.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="scene.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="stress.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="temperature.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="vector.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="viscosity.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="density.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="datatypes.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="integration.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="gravity.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="differences.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernel.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="density.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="integration.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pressureandsound.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scene.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stress.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="temperature.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vector.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="viscosity.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="datatypes.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VTKrelated.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gravity.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="differences.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kernel.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="constant.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
