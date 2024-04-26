@@ -8,8 +8,8 @@
 #include <fstream>
 
 
-const int MAX_PARTICLES_PER_CELL = 1000; // 假设每个网格最多100个粒子
-const int MAX_PAIRS = 10000;            // 假设最大交互对数量
+const int MAX_PARTICLES_PER_CELL = 10000; // 假设每个网格最多100个粒子
+const int MAX_PAIRS = 1000;            // 假设最大交互对数量
 
 
 struct InteractionPair {
@@ -195,6 +195,6 @@ struct Grid {
     }
 };
 
-__global__ void fillGrid(Particles p, Grid g, double gridCellSize, int3 gridDimensions);
+__global__ void fillGrid(Particles p, double gridCellSize, int3 gridDimensions);
 
 #endif
