@@ -95,5 +95,11 @@
     <ClInclude Include="constant.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="hashevaluation.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LongDistanceForce.cuh">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

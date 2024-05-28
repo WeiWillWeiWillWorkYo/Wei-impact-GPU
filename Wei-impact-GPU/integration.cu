@@ -11,6 +11,7 @@
 
 // 新增：hashFind全局函数
 
+/*
 __global__ void hashFind(Particles p, int numParticles) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= numParticles) return;
@@ -47,34 +48,63 @@ __global__ void hashFind(Particles p, int numParticles) {
     }
     p.numPairs[idx] = pairIndex; // 更新每个粒子的配对数
     printf("Total pairs found by particle %d: %d\n", idx, pairIndex); // 输出每个粒子找到的对数
+
 }
-
-
+*/
 /*
-__global__ void hashFind(Particles p, Grid g, double smoothingLength) {
+// 05.08 updated
+__global__ void hashFind(Particles p, int numParticles) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= p.count) {
-        return;
-    }
+    if (idx >= numParticles) return;
 
     int hash = p.hash[idx];
     int pairIndex = 0;
 
-    for (int i = 0; i < g.sizes[hash]; i++) {
-        int j = g.cells[hash * MAX_PARTICLES_PER_CELL + i];
+    // 避免在内核中使用sqrt函数计算，直接比较距离的平方
+    for (int j = idx + 1; j < numParticles && p.hash[j] == hash; ++j) {
+        double distX = p.x[j] - p.x[idx];
+        double distY = p.y[j] - p.y[idx];
+        double distZ = p.z[j] - p.z[idx];
+        double m_dist_sq = distX * distX + distY * distY + distZ * distZ;
+
+        double h_avg = (p.h[idx] + p.h[j]) / 2.0;
+        double threshold_sq = 4 * h_avg * h_avg; // 以h_avg的两倍作为距离阈值
+        if (m_dist_sq < threshold_sq) {
+            double3 dist = make_double3(distX, distY, distZ);
+            double3 grad;
+            double weight;
+            kernel(sqrt(m_dist_sq), dist, weight, grad, h_avg); // 仅在必要时计算sqrt
+
+            if (pairIndex < MAX_PAIRS) {
+                p.pairs[pairIndex].i = idx;
+                p.pairs[pairIndex].j = j;
+                p.pairs[pairIndex].w = weight;
+                p.pairs[pairIndex].grad = grad;
+                pairIndex++;
+            }
+        }
+    }
+    p.numPairs[idx] = pairIndex; // 更新每个粒子的配对数
+}
+*/
+
+/*
+__global__ void hashFind(Particles p, int numParticles, double radius) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= numParticles) return;
+
+    int pairIndex = 0;
+    double threshold_sq = radius * radius;
+
+    for (int j = 0; j < numParticles; j++) {
         if (idx != j) {
             double distX = p.x[j] - p.x[idx];
             double distY = p.y[j] - p.y[idx];
             double distZ = p.z[j] - p.z[idx];
-            double m_dist = sqrt(distX * distX + distY * distY + distZ * distZ);
-            double h_avg = (p.h[idx] + p.h[j]) / 2.0;
-
-            if (m_dist < 2 * h_avg) {
-                double3 dist = make_double3(distX, distY, distZ);
-                double3 grad;
-                double weight;
-                kernel(m_dist, dist, weight, grad, h_avg); // Corrected kernel function call
-
+            double dist_sq = distX * distX + distY * distY + distZ * distZ;
+            double3 grad;
+            double weight;
+            if (dist_sq < threshold_sq) {
                 if (pairIndex < MAX_PAIRS) {
                     p.pairs[pairIndex].i = idx;
                     p.pairs[pairIndex].j = j;
@@ -85,12 +115,92 @@ __global__ void hashFind(Particles p, Grid g, double smoothingLength) {
             }
         }
     }
-    *p.numPairs = pairIndex;
-    if (threadIdx.x == 0) {
-        printf("Total pairs found: %d\n", *p.numPairs);
-    }
+    p.numPairs[idx] = pairIndex;
 }
 */
+
+/*
+__global__ void findNeighbors(Particles p, Cell m_cell, double radius) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (idx >= p.count) return;
+
+    int start_idx = m_cell.starts[m_cell.grid_hash[idx]];
+    int end_idx = m_cell.ends[m_cell.grid_hash[idx]];
+    int pairIndex = 0;
+
+    for (int j = start_idx; j < end_idx; ++j) {
+        int neighbor_idx = m_cell.sorted_index[j];
+        if (neighbor_idx != idx && isNeighbor(p, idx, neighbor_idx, radius)) {
+            double distX = p.x[neighbor_idx] - p.x[idx];
+            double distY = p.y[neighbor_idx] - p.y[idx];
+            double distZ = p.z[neighbor_idx] - p.z[idx];
+            double dist = sqrt(distX * distX + distY * distY + distZ * distZ);
+            double3 dist_vec = make_double3(distX, distY, distZ);
+            double3 grad;
+            double weight;
+            double h_avg = (p.h[idx] + p.h[neighbor_idx]) / 2.0;
+
+            //printf("Particle %d interacting with %d: dist = %f, h_avg = %f\n", idx, neighbor_idx, dist, h_avg);
+            // 计算权重和梯度
+            kernel(dist, dist_vec, weight, grad, h_avg);
+
+            //printf("Weight: %f, Grad: (%f, %f, %f)\n", weight, grad.x, grad.y, grad.z);
+
+            // 更新粒子属性
+            if (pairIndex < MAX_PAIRS) {
+                p.pairs[pairIndex].i = idx;
+                p.pairs[pairIndex].j = neighbor_idx;
+                p.pairs[pairIndex].w = weight;
+                p.pairs[pairIndex].grad = grad;
+                pairIndex++;
+            }
+        }
+    }
+    p.numPairs[idx] = pairIndex; // 更新每个粒子的配对数
+}*/
+
+__global__ void findNeighbors(Particles p, Cell m_cell, double radius) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (idx >= p.count) return;
+
+    int start_idx = m_cell.starts[m_cell.grid_hash[idx]];
+    int end_idx = m_cell.ends[m_cell.grid_hash[idx]];
+    int pairIndex = 0;
+
+    // 确保 start_idx 和 end_idx 在有效范围内
+    if (start_idx == -1 || end_idx == -1 || start_idx >= end_idx) return;
+
+    for (int j = start_idx; j < end_idx; ++j) {
+        int neighbor_idx = m_cell.sorted_index[j];
+        if (neighbor_idx != idx && isNeighbor(p, idx, neighbor_idx, radius)) {
+            double distX = p.x[neighbor_idx] - p.x[idx];
+            double distY = p.y[neighbor_idx] - p.y[idx];
+            double distZ = p.z[neighbor_idx] - p.z[idx];
+            double dist = sqrt(distX * distX + distY * distY + distZ * distZ);
+            double3 dist_vec = make_double3(distX, distY, distZ);
+            double3 grad;
+            double weight;
+            double h_avg = (p.h[idx] + p.h[neighbor_idx]) / 2.0;
+            //printf("Particle %d interacting with %d: dist = %f, h_avg = %f\n", idx, neighbor_idx, dist, h_avg);
+
+            // 计算权重和梯度
+            kernel(dist, dist_vec, weight, grad, h_avg);
+
+            //printf("Weight: %f, Grad: (%f, %f, %f)\n", weight, grad.x, grad.y, grad.z);
+            // 更新粒子属性
+            if (pairIndex < MAX_PAIRS) {
+                p.pairs[pairIndex].i = idx;
+                p.pairs[pairIndex].j = neighbor_idx;
+                p.pairs[pairIndex].w = weight;
+                p.pairs[pairIndex].grad = grad;
+                pairIndex++;
+            }
+        }
+    }
+    p.numPairs[idx] = pairIndex; // 更新每个粒子的配对数
+
+}
+
 
 __global__ void computeInteractions(Particles p, double dt, double G) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -119,7 +229,7 @@ __global__ void computeInteractions(Particles p, double dt, double G) {
         p.vx[pair.j] += ax_j * dt;
         p.vy[pair.j] += ay_j * dt;
         p.vz[pair.j] += az_j * dt;
-        //printf("GGGGG!!!\n");
+        printf("GGGGG!!!\n");
     }
 }
 
@@ -150,6 +260,7 @@ __global__ void handleCollisions(Particles p, double radius) {
                     p.vx[j] = vel_j.x;
                     p.vy[j] = vel_j.y;
                     p.vz[j] = vel_j.z;
+                    //printf("GGGGG!!!\n");
                 }
             }
         }
@@ -194,4 +305,102 @@ __device__ void handleCollision(double3& vel_i, double3& vel_j, double3 pos_i, d
     vel_j.x += impulse.x / mass_j;
     vel_j.y += impulse.y / mass_j;
     vel_j.z += impulse.z / mass_j;
+}
+
+__global__ void computeGravitationalForce(Particles p, double G) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < p.count) {
+        double Fx = 0.0, Fy = 0.0, Fz = 0.0;
+
+        for (int j = 0; j < p.count; j++) {
+            if (j != idx) {
+                double dx = p.x[j] - p.x[idx];
+                double dy = p.y[j] - p.y[idx];
+                double dz = p.z[j] - p.z[idx];
+                double distSq = dx * dx + dy * dy + dz * dz + 1e-10;
+                double dist = sqrt(distSq);
+                double force = G * p.mass[idx] * p.mass[j] / distSq;
+                Fx += force * dx / dist;
+                Fy += force * dy / dist;
+                Fz += force * dz / dist;
+            }
+        }
+
+        p.vx[idx] += Fx / p.mass[idx] * G;
+        p.vy[idx] += Fy / p.mass[idx] * G;
+        p.vz[idx] += Fz / p.mass[idx] * G;
+    }
+}
+
+__global__ void applyBoundaryConditions(Particles p, double boxSize) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < p.count) {
+        if (p.x[idx] < 0.0) {
+            p.x[idx] = 0.0;
+            p.vx[idx] *= -1;
+        }
+        if (p.x[idx] > boxSize) {
+            p.x[idx] = boxSize;
+            p.vx[idx] *= -1;
+        }
+        if (p.y[idx] < 0.0) {
+            p.y[idx] = 0.0;
+            p.vy[idx] *= -1;
+        }
+        if (p.y[idx] > boxSize) {
+            p.y[idx] = boxSize;
+            p.vy[idx] *= -1;
+        }
+        if (p.z[idx] < 0.0) {
+            p.z[idx] = 0.0;
+            p.vz[idx] *= -1;
+        }
+        if (p.z[idx] > boxSize) {
+            p.z[idx] = boxSize;
+            p.vz[idx] *= -1;
+        }
+    }
+}
+
+__global__ void computeDensityPressure(Particles p) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= p.count) return;
+
+    double density = 0.0;
+    for (int j = 0; j < p.count; j++) {
+        if (idx != j) {
+            double dx = p.x[j] - p.x[idx];
+            double dy = p.y[j] - p.y[idx];
+            double dz = p.z[j] - p.z[idx];
+            double dist = sqrt(dx * dx + dy * dy + dz * dz);
+            double h = p.h[idx];
+            density += p.mass[j] * cubicSplineKernel(dist, h);
+        }
+    }
+    p.rho[idx] = density;
+    p.p[idx] = (density - p.rho_prev[idx]) * 0.5;  // 简化的压力计算
+}
+
+__global__ void computeFluidForces(Particles p, double dt) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= p.count) return;
+
+    double3 force = make_double3(0.0, 0.0, 0.0);
+    for (int j = 0; j < p.count; j++) {
+        if (idx != j) {
+            double dx = p.x[j] - p.x[idx];
+            double dy = p.y[j] - p.y[idx];
+            double dz = p.z[j] - p.z[idx];
+            double dist = sqrt(dx * dx + dy * dy + dz * dz);
+            double h = (p.h[idx] + p.h[j]) / 2.0;
+            double3 grad = cubicSplineGradient(make_double3(dx, dy, dz), h);
+            double weight = cubicSplineKernel(dist, h);
+            force.x += weight * (p.p[idx] + p.p[j]) / (2.0 * p.rho[idx]) * grad.x;
+            force.y += weight * (p.p[idx] + p.p[j]) / (2.0 * p.rho[idx]) * grad.y;
+            force.z += weight * (p.p[idx] + p.p[j]) / (2.0 * p.rho[idx]) * grad.z;
+        }
+    }
+    p.vx[idx] += force.x / p.mass[idx] * dt;
+    p.vy[idx] += force.y / p.mass[idx] * dt;
+    p.vz[idx] += force.z / p.mass[idx] * dt;
 }

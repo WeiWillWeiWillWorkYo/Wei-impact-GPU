@@ -1,10 +1,14 @@
-#include <cuda_runtime.h>
+﻿#include <cuda_runtime.h>
 #include <math.h>
 #include "kernel.cuh"
 #include "constant.h"
+#include "datatypes.cuh"
 
-// Utility function to calculate cubic spline kernel
 __device__ double cubicSplineKernel(double r, double h) {
+    if (h <= 0) {
+        printf("Error: h should be greater than 0.\n");
+        return 0.0;
+    }
     double q = r / h;
     double sigma = 1.0 / (PI * h * h * h);
 
@@ -21,9 +25,16 @@ __device__ double cubicSplineKernel(double r, double h) {
     }
 }
 
-// Utility function to calculate the gradient of the cubic spline kernel
 __device__ double3 cubicSplineGradient(double3 r, double h) {
+    if (h <= 0) {
+        printf("Error: h should be greater than 0.\n");
+        return make_double3(0.0, 0.0, 0.0);
+    }
     double norm_r = sqrt(r.x * r.x + r.y * r.y + r.z * r.z);
+    if (norm_r == 0.0) {
+        printf("Warning: norm_r is 0.\n");
+        return make_double3(0.0, 0.0, 0.0);
+    }
     double q = norm_r / h;
     double sigma = 1.0 / (PI * h * h * h);
     double factor;
@@ -43,8 +54,9 @@ __device__ double3 cubicSplineGradient(double3 r, double h) {
     }
 }
 
-// Kernel function to be called in computeInteractions
 __device__ void kernel(double m_dist, double3 dist, double& weight, double3& grad, double h) {
     weight = cubicSplineKernel(m_dist, h);
     grad = cubicSplineGradient(dist, h);
+    printf("Dist: %f, h: %f, Weight: %f, Grad: (%f, %f, %f)\n", m_dist, h, weight, grad.x, grad.y, grad.z);
 }
+

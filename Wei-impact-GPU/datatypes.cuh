@@ -6,11 +6,15 @@
 #include <cuda_runtime.h>
 #include <vector>
 #include <fstream>
+#include <thrust/sort.h>
+#include <thrust/device_vector.h>
+#include "kernel.cuh"
 
 
 const int MAX_PARTICLES_PER_CELL = 10000; // 假设每个网格最多100个粒子
 const int MAX_PAIRS = 1000;            // 假设最大交互对数量
 
+typedef unsigned int uint;
 
 struct InteractionPair {
     int i, j;             // 粒子索引对
@@ -171,6 +175,39 @@ struct Particles {
     }
 };
 
+struct Cell {
+
+uint* sorted_index;
+uint* grid_hash;
+int* starts;
+int* ends;
+int num_cells;
+
+// Allocation function
+cudaError_t allocate(int numParticles, int numCells) {
+    this->num_cells = numCells;
+    cudaError_t err;
+    err = cudaMallocManaged(&sorted_index, numParticles * sizeof(uint));
+    if (err != cudaSuccess) return err;
+    err = cudaMallocManaged(&grid_hash, numParticles * sizeof(uint));
+    if (err != cudaSuccess) return err;
+    err = cudaMallocManaged(&starts, numCells * sizeof(int));
+    if (err != cudaSuccess) return err;
+    err = cudaMallocManaged(&ends, numCells * sizeof(int));
+    if (err != cudaSuccess) return err;
+    return cudaSuccess;
+}
+
+// Free function
+void free() {
+    cudaFree(sorted_index);
+    cudaFree(grid_hash);
+    cudaFree(starts);
+    cudaFree(ends);
+}
+};
+
+/*
 struct Grid {
     int* cells; // 网格中的粒子索引
     int* sizes; // 每个网格存储的粒子数量
@@ -194,7 +231,15 @@ struct Grid {
         cudaFree(sizes);
     }
 };
+*/
+void initializeGrid(Cell& m_cell, int num_particles, int num_cells);
+__device__ uint calculateHash(int3 grid_pos, int3 grid_dimensions);
+__global__ void fillGrid(Particles p, Cell m_cell, double gridCellSize, int3 gridDimensions);
+__global__ void setCellStartsAndEnds(Cell m_cell, int num_particles);
+__device__ bool isNeighbor(Particles p, int idx1, int idx2, double radius);
 
-__global__ void fillGrid(Particles p, double gridCellSize, int3 gridDimensions);
+
+
+//__global__ void fillGrid(Particles p, double gridCellSize, int3 gridDimensions);
 
 #endif
