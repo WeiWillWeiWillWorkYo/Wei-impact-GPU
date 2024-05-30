@@ -198,6 +198,21 @@ cudaError_t allocate(int numParticles, int numCells) {
     return cudaSuccess;
 }
 
+struct TreeNode {
+    double x, y, z; // Center of mass
+    double mass;    // Total mass
+    int start; // Starting index of particles in this node
+    int end;   // Ending index of particles in this node
+    int children[8]; // Child nodes
+    bool isLeaf;    // Flag to indicate if the node is a leaf
+
+    // Multipole expansion coefficients (example: only monopole for simplicity)
+    double multipole;
+    // Local expansion coefficients
+    double localExpansion;
+};
+
+
 // Free function
 void free() {
     cudaFree(sorted_index);

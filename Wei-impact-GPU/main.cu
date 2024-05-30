@@ -20,7 +20,7 @@
 
 
 int main() {
-    const int numParticles = 729;  // 粒子数量
+    const int numParticles = 100;  // 粒子数量
     const double timeStep = 0.001;  // 时间步长
     const double G = 6.67430e-11;
     const double viscosity = 0.01; // 粘性系数

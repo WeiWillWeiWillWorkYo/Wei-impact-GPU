@@ -98,8 +98,11 @@
     <ClInclude Include="hashevaluation.cuh">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LongDistanceForce.cuh">
+    <ClInclude Include="FMMandGravity.cu">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FMMandGravity.cuh">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
