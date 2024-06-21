@@ -1,10 +1,11 @@
-#ifndef FMM_H
-#define FMM_H
+#ifndef FMMANDGRAVITY_H
+#define FMMANDGRAVITY_H
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <cmath>
 #include <cstring>
+#include "datatypes.cuh"
 
 // Å‘å“I—±q”—Ê
 #define MAX_PARTICLES_PER_NODE 32

@@ -15,7 +15,7 @@ __global__ void computeInteractions(Particles p, double dt, double G);
 __global__ void updatePositions(Particles p, double dt);
 
 //4.25 new hash find
-__global__ void findNeighbors(Particles p, Cell m_cell, double radius);
+//__global__ void findNeighbors(Particles p, Cell m_cell, double radius);
 
 //__global__ void hashFind(Particles p, int numParticles);
 

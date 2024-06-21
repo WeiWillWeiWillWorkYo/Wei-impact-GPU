@@ -45,6 +45,7 @@ __global__ void buildTree(TreeNode* nodes, Particles particles, int* indices, in
     }
 }
 
+
 void launchBuildTree(TreeNode*& d_nodes, Particles& d_particles, int* d_indices, int numParticles) {
     int threadsPerBlock = 256;
     int blocksPerGrid = (numParticles + threadsPerBlock - 1) / threadsPerBlock;

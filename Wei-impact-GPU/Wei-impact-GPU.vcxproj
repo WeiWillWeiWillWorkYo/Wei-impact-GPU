@@ -91,6 +91,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </CudaCompile>
+    <CudaCompile Include="Hashsearch.cu" />
+    <CudaCompile Include="initialize.cu" />
     <CudaCompile Include="kernel.cu" />
     <CudaCompile Include="main.cu" />
     <CudaCompile Include="pressureandsound.cu" />
@@ -113,14 +115,23 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="FMMandGravity.cuh" />
+    <ClInclude Include="FMMandGravity.cuh">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="gravity.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="hashevaluation.cuh" />
+    <ClInclude Include="Hashsearch.cuh" />
+    <ClInclude Include="initialize.cuh" />
     <ClInclude Include="kernel.cuh" />
-    <ClInclude Include="FMMandGravity.cu" />
+    <CudaCompile Include="FMMandGravity.cu">
+      <FileType>Document</FileType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
     <ClInclude Include="VTKrelated.h" />
     <CudaCompile Include="density.cu">
       <FileType>Document</FileType>

@@ -9,197 +9,9 @@
 #include "differences.cuh"
 #include "kernel.cuh"
 
-// 新增：hashFind全局函数
 
-/*
-__global__ void hashFind(Particles p, int numParticles) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= numParticles) return;
 
-    int hash = p.hash[idx];
-    int pairIndex = 0;
 
-    printf("Particle %d, Hash: %d\n", idx, hash); // 输出当前粒子的哈希值
-
-    // 搜索同一哈希值的粒子
-    for (int j = idx + 1; j < numParticles && p.hash[j] == hash; ++j) {
-        double distX = p.x[j] - p.x[idx];
-        double distY = p.y[j] - p.y[idx];
-        double distZ = p.z[j] - p.z[idx];
-        double m_dist = sqrt(distX * distX + distY * distY + distZ * distZ);
-
-        printf("Checking particles %d and %d, Distance: %f\n", idx, j, m_dist); // 输出距离检查信息
-
-        double h_avg = (p.h[idx] + p.h[j]) / 2.0;
-        if (m_dist < 2 * h_avg) {
-            double3 dist = make_double3(distX, distY, distZ);
-            double3 grad;
-            double weight;
-            kernel(m_dist, dist, weight, grad, h_avg);
-
-            if (pairIndex < MAX_PAIRS) {
-                p.pairs[pairIndex].i = idx;
-                p.pairs[pairIndex].j = j;
-                p.pairs[pairIndex].w = weight;
-                p.pairs[pairIndex].grad = grad;
-                pairIndex++;
-            }
-        }
-    }
-    p.numPairs[idx] = pairIndex; // 更新每个粒子的配对数
-    printf("Total pairs found by particle %d: %d\n", idx, pairIndex); // 输出每个粒子找到的对数
-
-}
-*/
-/*
-// 05.08 updated
-__global__ void hashFind(Particles p, int numParticles) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= numParticles) return;
-
-    int hash = p.hash[idx];
-    int pairIndex = 0;
-
-    // 避免在内核中使用sqrt函数计算，直接比较距离的平方
-    for (int j = idx + 1; j < numParticles && p.hash[j] == hash; ++j) {
-        double distX = p.x[j] - p.x[idx];
-        double distY = p.y[j] - p.y[idx];
-        double distZ = p.z[j] - p.z[idx];
-        double m_dist_sq = distX * distX + distY * distY + distZ * distZ;
-
-        double h_avg = (p.h[idx] + p.h[j]) / 2.0;
-        double threshold_sq = 4 * h_avg * h_avg; // 以h_avg的两倍作为距离阈值
-        if (m_dist_sq < threshold_sq) {
-            double3 dist = make_double3(distX, distY, distZ);
-            double3 grad;
-            double weight;
-            kernel(sqrt(m_dist_sq), dist, weight, grad, h_avg); // 仅在必要时计算sqrt
-
-            if (pairIndex < MAX_PAIRS) {
-                p.pairs[pairIndex].i = idx;
-                p.pairs[pairIndex].j = j;
-                p.pairs[pairIndex].w = weight;
-                p.pairs[pairIndex].grad = grad;
-                pairIndex++;
-            }
-        }
-    }
-    p.numPairs[idx] = pairIndex; // 更新每个粒子的配对数
-}
-*/
-
-/*
-__global__ void hashFind(Particles p, int numParticles, double radius) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= numParticles) return;
-
-    int pairIndex = 0;
-    double threshold_sq = radius * radius;
-
-    for (int j = 0; j < numParticles; j++) {
-        if (idx != j) {
-            double distX = p.x[j] - p.x[idx];
-            double distY = p.y[j] - p.y[idx];
-            double distZ = p.z[j] - p.z[idx];
-            double dist_sq = distX * distX + distY * distY + distZ * distZ;
-            double3 grad;
-            double weight;
-            if (dist_sq < threshold_sq) {
-                if (pairIndex < MAX_PAIRS) {
-                    p.pairs[pairIndex].i = idx;
-                    p.pairs[pairIndex].j = j;
-                    p.pairs[pairIndex].w = weight;
-                    p.pairs[pairIndex].grad = grad;
-                    pairIndex++;
-                }
-            }
-        }
-    }
-    p.numPairs[idx] = pairIndex;
-}
-*/
-
-/*
-__global__ void findNeighbors(Particles p, Cell m_cell, double radius) {
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    if (idx >= p.count) return;
-
-    int start_idx = m_cell.starts[m_cell.grid_hash[idx]];
-    int end_idx = m_cell.ends[m_cell.grid_hash[idx]];
-    int pairIndex = 0;
-
-    for (int j = start_idx; j < end_idx; ++j) {
-        int neighbor_idx = m_cell.sorted_index[j];
-        if (neighbor_idx != idx && isNeighbor(p, idx, neighbor_idx, radius)) {
-            double distX = p.x[neighbor_idx] - p.x[idx];
-            double distY = p.y[neighbor_idx] - p.y[idx];
-            double distZ = p.z[neighbor_idx] - p.z[idx];
-            double dist = sqrt(distX * distX + distY * distY + distZ * distZ);
-            double3 dist_vec = make_double3(distX, distY, distZ);
-            double3 grad;
-            double weight;
-            double h_avg = (p.h[idx] + p.h[neighbor_idx]) / 2.0;
-
-            //printf("Particle %d interacting with %d: dist = %f, h_avg = %f\n", idx, neighbor_idx, dist, h_avg);
-            // 计算权重和梯度
-            kernel(dist, dist_vec, weight, grad, h_avg);
-
-            //printf("Weight: %f, Grad: (%f, %f, %f)\n", weight, grad.x, grad.y, grad.z);
-
-            // 更新粒子属性
-            if (pairIndex < MAX_PAIRS) {
-                p.pairs[pairIndex].i = idx;
-                p.pairs[pairIndex].j = neighbor_idx;
-                p.pairs[pairIndex].w = weight;
-                p.pairs[pairIndex].grad = grad;
-                pairIndex++;
-            }
-        }
-    }
-    p.numPairs[idx] = pairIndex; // 更新每个粒子的配对数
-}*/
-
-__global__ void findNeighbors(Particles p, Cell m_cell, double radius) {
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    if (idx >= p.count) return;
-
-    int start_idx = m_cell.starts[m_cell.grid_hash[idx]];
-    int end_idx = m_cell.ends[m_cell.grid_hash[idx]];
-    int pairIndex = 0;
-
-    // 确保 start_idx 和 end_idx 在有效范围内
-    if (start_idx == -1 || end_idx == -1 || start_idx >= end_idx) return;
-
-    for (int j = start_idx; j < end_idx; ++j) {
-        int neighbor_idx = m_cell.sorted_index[j];
-        if (neighbor_idx != idx && isNeighbor(p, idx, neighbor_idx, radius)) {
-            double distX = p.x[neighbor_idx] - p.x[idx];
-            double distY = p.y[neighbor_idx] - p.y[idx];
-            double distZ = p.z[neighbor_idx] - p.z[idx];
-            double dist = sqrt(distX * distX + distY * distY + distZ * distZ);
-            double3 dist_vec = make_double3(distX, distY, distZ);
-            double3 grad;
-            double weight;
-            double h_avg = (p.h[idx] + p.h[neighbor_idx]) / 2.0;
-            //printf("Particle %d interacting with %d: dist = %f, h_avg = %f\n", idx, neighbor_idx, dist, h_avg);
-
-            // 计算权重和梯度
-            kernel(dist, dist_vec, weight, grad, h_avg);
-
-            //printf("Weight: %f, Grad: (%f, %f, %f)\n", weight, grad.x, grad.y, grad.z);
-            // 更新粒子属性
-            if (pairIndex < MAX_PAIRS) {
-                p.pairs[pairIndex].i = idx;
-                p.pairs[pairIndex].j = neighbor_idx;
-                p.pairs[pairIndex].w = weight;
-                p.pairs[pairIndex].grad = grad;
-                pairIndex++;
-            }
-        }
-    }
-    p.numPairs[idx] = pairIndex; // 更新每个粒子的配对数
-
-}
 
 
 __global__ void computeInteractions(Particles p, double dt, double G) {
@@ -209,7 +21,7 @@ __global__ void computeInteractions(Particles p, double dt, double G) {
          InteractionPair pair = p.pairs[idx];
         double Fx = 0, Fy = 0, Fz = 0;
 
-        computeGravitationalForce(Fx, Fy, Fz, G, p.mass[pair.i], p.mass[pair.j], p.x[pair.i], p.y[pair.i], p.z[pair.i], p.x[pair.j], p.y[pair.j], p.z[pair.j]);
+        //computeGravitationalForce(Fx, Fy, Fz, G, p.mass[pair.i], p.mass[pair.j], p.x[pair.i], p.y[pair.i], p.z[pair.i], p.x[pair.j], p.y[pair.j], p.z[pair.j]);
         // 更新粒子i和粒子j的速度
 
         double ax_i = Fx / p.mass[pair.i];
@@ -274,7 +86,7 @@ __global__ void updatePositions(Particles p, double dt) {
             p.x[i] += p.vx[i] * dt; // 更新 x 位置
             p.y[i] += p.vy[i] * dt; // 更新 y 位置
             p.z[i] += p.vz[i] * dt; // 更新 z 位置
-
+            printf("GGGGG!!!\n");
         }
     }
 

@@ -51,6 +51,15 @@
     <CudaCompile Include="kernel.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
+    <CudaCompile Include="FMMandGravity.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="initialize.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Hashsearch.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="density.cuh">
@@ -98,10 +107,13 @@
     <ClInclude Include="hashevaluation.cuh">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FMMandGravity.cu">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="FMMandGravity.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="initialize.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Hashsearch.cuh">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
